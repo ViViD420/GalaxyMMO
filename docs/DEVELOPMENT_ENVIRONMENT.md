@@ -6,9 +6,10 @@ The Unreal Editor, asset pipeline, C++ client builds, profiling, and packaged-cl
 
 ## Server investigation
 
-Core3 upstream documents a Docker-based environment and a Debian 12 manual build path. The manual path lists CMake 3.18+, Berkeley DB 5.3, MariaDB, OpenSSL, pthreads, Lua 5.3, zlib, clang 19, Java runtime, Boost, and Ninja. Confirm exact dependencies against the pinned upstream revision before provisioning.
+Core3 upstream currently documents a Docker-based environment and a Debian 12 manual build path. The manual path lists CMake 3.18+, Berkeley DB 5.3, MariaDB client/server, OpenSSL, pthreads, Lua 5.3, zlib, clang 19, Java runtime, Boost, and Ninja. Its README documents a debug build with `make build-ninja-debug` from `MMOCoreORB`. These requirements must be checked against our pinned source revision before use.
 
-Upstream build guide: https://github.com/swgemu/Core3
+- Upstream build guide: https://github.com/swgemu/Core3/blob/unstable/README.md
+- GalaxyMMO's pinned build procedure: [Core3 Build Baseline](CORE3_BUILD_BASELINE.md)
 
 ## Suggested Windows workstation path
 

@@ -9,6 +9,7 @@ GalaxyMMO is an original open-world sandbox MMORPG project. The planned client i
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Core3 integration plan](docs/CORE3_INTEGRATION_PLAN.md)
+- [Core3 build baseline](docs/CORE3_BUILD_BASELINE.md)
 - [Core3 feature reuse matrix](docs/CORE3_FEATURE_REUSE_MATRIX.md)
 - [Core3 reconnaissance](docs/CORE3_RECONNAISSANCE.md)
 - [Client/server protocol boundary](docs/PROTOCOL_BOUNDARY.md)
@@ -35,6 +36,12 @@ Run from the repository root with Python 3.12 or compatible:
 ```sh
 python tools/validate_protocol.py
 python -m unittest discover -s tests -v
+```
+
+The Core3 checkout checker is a separate read-only guardrail:
+
+```sh
+python tools/check_core3_checkout.py ../Core3
 ```
 
 The current protocol manifest is design metadata only; transport, serialization, and wire messages remain undecided.
