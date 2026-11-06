@@ -88,4 +88,4 @@ First read this file and inspect the live GitHub branch, PR, and CI state. Use t
 - Audit source pins: Core3 `403893d9b9f8e6fa712fbb3cb1fcd8f0fe45bb79`; Engine3 `4cbf39336e0e727dfef861fbe65bd303ce70fd37`.
 - Audit sections 8-10 trace Berkeley DB worker/master commit flow, error handling, checkpoint/shutdown, auction startup reconstruction, expiry, cancellation, refunds, and regression gates.
 - Source inspection only: no clean Linux build, deterministic fault injection, crash/restart test, or runtime economy test has been executed. Do not claim complete economy functionality or patch upstream without reproducing the failure.
-- Previous branch head before this extension: `fac0c1e3e9d63d168c1ef30fb22defbe18e24c14`.
+- Audit extension content commit: `01021180a56e9659bbee7966604faa9cf7a44eb8` (`docs: trace Berkeley DB commits and auction recovery`).
