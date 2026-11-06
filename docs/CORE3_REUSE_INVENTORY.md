@@ -110,3 +110,16 @@ Do not expose Core3 object IDs, packet structs, callback factories, IDL types, o
 - `MMOCoreORB/src/server/zone/objects/player/PlayerObject.idl`
 - `MMOCoreORB/src/server/db/ServerDatabase.h`
 
+
+
+## Deep transaction audit
+
+The detailed trace is in [CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md](CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md). Key findings:
+
+- ContainerComponent::transferObject removes the source parent before destination insertion and does not internally call canAddObject.
+- Player trade performs independent item moves and currency settlement. The shown code does not roll back successful earlier moves when a later move fails.
+- Auction listing, instant purchase, bid/refund, and retrieval span multiple in-memory and persistent state changes; a single atomic DB transaction is not demonstrated.
+- TransactionLog::commit finalizes an audit record, not a DB commit or rollback.
+- ObjectManager::updatePersistentObject only marks the object updated. Durable commit timing and crash recovery remain to be traced.
+
+These are source-level findings at the pinned revision, not reproduced live exploits or runtime certification. Do not mark economy operations safe/atomic until fault-injection and restart tests pass.

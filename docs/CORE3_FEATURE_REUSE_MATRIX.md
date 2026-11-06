@@ -42,3 +42,8 @@ Core3 does not expose one standalone inventory manager in the inspected source. 
 ## Review record
 
 See [CORE3_REUSE_INVENTORY.md](CORE3_REUSE_INVENTORY.md) for exact source paths and API names. Update this matrix with source revision, test evidence, and known limitations as each subsystem is audited.
+
+
+## Economy integrity audit status
+
+The deeper trace is in [CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md](CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md). Core3 has useful containment, permission, trade-validation, auction, and persistence primitives, but source review exposes unverified partial-commit windows. TransactionLog is audit logging, not an atomic transaction manager. Keep inventory/trade/auction as reuse candidates, not verified-safe, until concurrency, failure-injection, and restart tests pass.
