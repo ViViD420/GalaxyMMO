@@ -123,3 +123,8 @@ The detailed trace is in [CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md](CORE3_INVE
 - ObjectManager::updatePersistentObject only marks the object updated. Durable commit timing and crash recovery remain to be traced.
 
 These are source-level findings at the pinned revision, not reproduced live exploits or runtime certification. Do not mark economy operations safe/atomic until fault-injection and restart tests pass.
+
+
+## Persistence and auction lifecycle deep dive
+
+The object store is backed by Berkeley DB through the pinned Engine3 submodule `4cbf39336e0e727dfef861fbe65bd303ce70fd37`. Dirty object writes are grouped into worker child transactions under a master transaction; the master uses synchronous commit followed by checkpoint. Source review identifies two high-priority error-handling risks: child-batch write errors can be masked by a later successful operation, and the master commit return code is ignored by the caller even though dirty flags were cleared during serialization. The detailed trace and auction startup/expiry/cancellation/refund analysis are in [CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md](CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md). These remain source-level findings requiring deterministic regression and crash tests.

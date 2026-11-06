@@ -31,12 +31,15 @@ GalaxyMMO is an original open-world sandbox MMORPG using Unreal Engine 5 + C++ f
 
 - Repository foundation, architecture/ADRs, protocol manifest/validator/tests/CI, Core3 reconnaissance, and reuse inventory.
 - Inventory/trade/persistence source-audit milestone: added docs/CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md; updated the reuse inventory, feature matrix, and this handoff. Audit content is committed at 0e2d1c387198bff33836fcc3332b4f010655c566.
-- Audit traced ContainerComponent transfer ordering; PlayerManager trade offer, validation, and finalization; AuctionManager listing, purchase, bid/refund, and retrieval; AuctionItem deletion; ObjectManager persistence hooks; MySQL wrapper semantics; and TransactionLog.
+- Audit traces ContainerComponent transfer ordering; PlayerManager trade offer, validation, and finalization; AuctionManager listing, purchase, bid/refund, retrieval, startup reconstruction, cancellation, expiry, and deletion; ObjectManager dirty-object collection; Engine3 Berkeley DB child/master transactions; commit/checkpoint/shutdown; MySQL wrapper semantics; and TransactionLog.
 - Critical finding: TransactionLog is audit logging, not a DB transaction or rollback system.
 - Critical source-level trade risk: finalization does not roll back prior successful item transfers when a later transfer fails, and the shown method still proceeds to currency settlement.
 - Critical source-level auction risk: instant-buy has a seller-null branch after buyer debit and SOLD status, then commits the audit log and returns without visible seller payout in that branch. Reachability/fallback requires runtime verification.
 - Container move risk: old parent removal occurs before destination insertion; transfer does not itself invoke canAddObject.
-- Persistence finding: ObjectManager::updatePersistentObject marks an object updated; durable commit/ack timing remains unverified.
+- Persistence detail: Core3 pins Engine3 submodule 4cbf39336e0e727dfef861fbe65bd303ce70fd37. Dirty writes/deletes are staged in worker child transactions under a Berkeley DB master transaction; master uses commitSync then checkpoint. Mutation API is asynchronous relative to save pass.
+- New high-confidence Engine3 risk: DatabaseManager::commitLocalTransaction uses the final write return code, so a non-deadlock error can be masked by a later successful write in the same child batch.
+- New high-confidence Engine3 risk: CommitMasterTransactionThread ignores DatabaseManager::commitTransaction return value; worker serialization cleared dirty flags before master result is handled.
+- Auction lifecycle: startup rebuilds AuctionsMap from persistent AuctionItem records; weak-reference expiry tasks and periodic maintenance overlap. Cancellation refund is asynchronous and bidder-online dependent in shown path; offline bidder expiry/cancellation and cancel-vs-expire races require tests.
 - These are source findings, not reproduced exploits, runtime test results, or certification of current upstream head.
 - GalaxyMMO has not changed Core3 source and has not implemented an economy transaction coordinator.
 
@@ -78,3 +81,11 @@ When the user says:
 > Resume GalaxyMMO from the handoff checkpoint.
 
 First read this file and inspect the live GitHub branch, PR, and CI state. Use the live repository as source of truth if it has advanced beyond the SHA recorded above. Continue from the next unfinished step, commit completed work to development/foundation-hardening, and report the exact commit SHA and actual CI status. Never overwrite concurrent work or merge without explicit approval.
+
+
+## Latest deep audit checkpoint
+
+- Audit source pins: Core3 `403893d9b9f8e6fa712fbb3cb1fcd8f0fe45bb79`; Engine3 `4cbf39336e0e727dfef861fbe65bd303ce70fd37`.
+- Audit sections 8-10 trace Berkeley DB worker/master commit flow, error handling, checkpoint/shutdown, auction startup reconstruction, expiry, cancellation, refunds, and regression gates.
+- Source inspection only: no clean Linux build, deterministic fault injection, crash/restart test, or runtime economy test has been executed. Do not claim complete economy functionality or patch upstream without reproducing the failure.
+- Previous branch head before this extension: `fac0c1e3e9d63d168c1ef30fb22defbe18e24c14`.

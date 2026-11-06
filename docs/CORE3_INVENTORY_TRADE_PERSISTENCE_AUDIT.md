@@ -248,3 +248,109 @@ All paths refer to the exact pinned Core3 revision.
 ## Next source-audit gate
 
 Trace the object-database manager/worker implementation, including STM boundaries, serialization, commit, checkpoint, deletion, and recovery. Then complete auction expiration/cancellation callback paths and implement reproducible fault-injection tests in a clean Linux checkout. Until those tests pass, the listed risks remain open.
+
+
+## 8. Engine3 Berkeley DB write/commit pipeline
+
+### Exact source provenance
+
+Core3 revision `403893d9b9f8e6fa712fbb3cb1fcd8f0fe45bb79` pins submodule `MMOCoreORB/utils/engine3` at `4cbf39336e0e727dfef861fbe65bd303ce70fd37`. Relevant Engine3 paths:
+
+- `MMOEngine/src/engine/db/DatabaseManager.cpp`
+- `MMOEngine/src/engine/db/DatabaseManager.h`
+- `MMOEngine/src/engine/db/ObjectDatabase.cpp`
+- `MMOEngine/src/engine/db/LocalDatabase.cpp`
+- `MMOEngine/src/engine/orb/db/DOBObjectManager.cpp`
+- `MMOEngine/src/engine/orb/db/UpdateModifiedObjectsThread.cpp`
+- `MMOEngine/src/engine/orb/db/CommitMasterTransactionThread.cpp`
+
+### Actual write sequence
+
+Engine3 configures the Berkeley DB environment with transactions, locking, logging, and recovery enabled by default; MVCC is configurable. Core3 loads named object databases into that environment.
+
+The normal dirty-object save sequence is:
+
+1. A game mutation marks a persistent object dirty.
+2. A periodic `UpdateModifiedObjectsTask` invokes `DOBObjectManager::updateModifiedObjectsToDatabase`.
+3. The object manager blocks task processing while it collects modified/deleted objects.
+4. The root broker starts a Berkeley DB master transaction.
+5. Worker threads serialize objects, calculate a CRC to skip unchanged objects, and queue key/value puts or deletes in thread-local `CurrentTransaction` buffers.
+6. Each worker applies its buffer in a Berkeley DB child transaction nested under the master transaction. The child calls `commitSync`; nested child commit does not make the entire master save pass durable independently.
+7. The master thread waits for workers, calls the root broker's master `commitSync`, then calls Berkeley DB `checkpoint`.
+8. Post-commit callbacks, bookkeeping, garbage collection, and scheduling of the next save pass follow.
+
+The master transaction is the meaningful cross-worker commit boundary. A checkpoint is a subsequent recovery/log-maintenance operation, not a substitute for committing the transaction.
+
+### Dirty flag and acknowledgement
+
+`DOBObjectManager::commitUpdatePersistentObjectToDB` serializes the object, compares its CRC to the last saved CRC, queues changed bytes through `ObjectDatabase::putData`, updates the in-memory last-save CRC, and clears the object's updated flag in the worker path. That clearing occurs before the master transaction commit result is acted upon. Thus an object's clean in-memory flag is not itself proof that the master save transaction durably committed.
+
+The mutation API is asynchronous relative to the periodic save pass. A client response immediately after a dirty mark is not a durable-save acknowledgement. GalaxyMMO must specify which economy actions require a synchronous durable commit before success is returned.
+
+### Critical source-level commit error handling
+
+**Child-batch error masking:** `DatabaseManager::commitLocalTransaction` logs a non-deadlock error returned by `tryPutData` or `tryDeleteData`, but continues processing the batch. The same `ret` variable is overwritten by each later operation. After the loop, commit/abort is decided using only the final `ret`. If an earlier operation fails and a later operation succeeds, the final return value can be zero and the child transaction can commit a successful subset of the queued updates. This is a high-confidence control-flow observation at the pinned Engine3 revision; it requires deterministic fault injection before any source patch.
+
+**Master-commit failure ignored:** `DatabaseManager::commitTransaction` calls Berkeley DB `commitSync`, logs a nonzero return, and returns that code. `CommitMasterTransactionThread::commitData` calls it but does not check the return value before proceeding to checkpoint, post-commit checks, garbage collection, and `finishObjectUpdate`. Worker serialization has already cleared dirty flags. The caller path therefore does not demonstrate retrying or restoring dirty flags when the master commit reports failure. Treat this as a high-priority durability risk; verify actual failure behavior and ensure a failed master commit cannot be acknowledged as a successful save pass.
+
+### Checkpoint, shutdown, and relational metadata
+
+- `DatabaseManager::checkpoint` forces a Berkeley DB checkpoint; the shown wrapper does not inspect a return code.
+- `ObjectManager::shutdown` stops update worker threads, shuts down the master transaction thread, closes databases, and finalizes the manager. Test outstanding dirty objects and pending worker buffers during graceful and forced termination.
+- The root-broker save pass also calls Core3's `onUpdateModifiedObjectsToDatabase` / `onCommitData` callbacks for relational character-directory data. This MySQL/API path is separate from the Berkeley DB object graph transaction; no distributed transaction spanning both stores is demonstrated.
+
+### Revised persistence conclusions
+
+- Confirmed: Berkeley DB environment transaction support is enabled.
+- Confirmed: dirty-object writes/deletes are grouped into worker child transactions under a master transaction; the master uses synchronous commit followed by checkpoint.
+- Confirmed: ordinary object mutation is asynchronous relative to the save pass.
+- High-confidence source risk: a child-batch write error can be masked by a later successful write because commit/abort uses only the final return code.
+- High-confidence source risk: master commit return value is ignored by its caller, while dirty flags have already been cleared.
+- Not proven: crash safety under disk-full, IO error, power loss, forced termination, or environment recovery.
+- Not proven: atomicity across object graph persistence and relational character metadata.
+
+## 9. Auction startup, expiry, cancellation, and recovery
+
+### Startup reconstruction
+
+`AuctionManagerImplementation::initialize` loads the persistent `auctionitems` database and rebuilds the in-memory `AuctionsMap`. It handles RETRIEVED records and EXPIRED records past grace time by scheduling deletion; validates vendor/owner references; relocates orphaned bazaar listings to a default bazaar when available; detects duplicate listings for the same auctioned object and keeps the record with the higher AuctionItem object ID; and schedules `ExpireAuctionTask` for active timed auctions.
+
+This is a useful rebuild/reconciliation mechanism, not a durable transaction log. The duplicate winner policy is based on AuctionItem object ID, not a proven economic commit sequence. Restart tests must compare listing state, item ownership, and money state—not just map contents.
+
+### Scheduled and periodic work
+
+`ExpireAuctionTask` holds weak references to the manager and item; if both resolve, it calls `expireAuction`. `CheckAuctionsTask` also uses a weak manager reference, runs on the slow queue, and calls both `checkAuctions` and `checkVendorItems`. Periodic maintenance scans bazaar and vendor terminal lists, clamps invalid expiry times, reschedules tasks when expiry changes, deletes expired grace-period listings, and removes RETRIEVED records still in the map. These overlapping paths need idempotency tests.
+
+### Expiry outcomes
+
+- No bidder: `expireBidAuction` changes the listing to EXPIRED, sets a new grace-period expiry, clears withdraw state, and mails the seller.
+- Bidder lookup fails (e.g. offline/unavailable): `expireAuction` also calls `expireBidAuction`; no bidder refund is visible in that method.
+- Bidder resolves: listing becomes SOLD, auction-owner indexing is updated, and seller/buyer mail is sent. Bid funds were debited earlier in bid processing.
+- After grace period, `deleteExpiredSale` logs the expiry and asks AuctionsMap to delete the listing and associated scene object.
+
+Open question: if the bidder is offline at expiry, the visible expiry path treats the listing as expired without showing a refund. Trace bid debit and offline-credit recovery before deciding whether this is a defect or intentional deferred state. Test online/offline bidder expiry and restart at each point.
+
+### Cancellation and refunds
+
+`cancelItem` checks listing status and actor permissions, then calls `refundAuction` for timed auctions and cancels/drops the expiry task before acquiring the AuctionItem lock to set the listing EXPIRED. The status/ownership checks and refund/task cancellation therefore precede the item lock used for the terminal state mutation; cancellation can race a callback that has already started.
+
+`refundAuction` resolves the bidder through PlayerManager. If a bidder object exists, it schedules an asynchronous task that locks the bidder and credits bank funds. If no bidder object is found, the shown code sends cancellation mail but does not visibly enqueue a durable refund. The scheduled refund has no visible durable idempotency key in this method. These are source-level risks/questions, not reproduced lost-credit incidents.
+
+### Required auction invariants
+
+1. Only one terminal transition wins among bid, buy, cancel, expiry, and retrieve.
+2. Every debit, refund, payout, and item transfer has a durable unique operation identity and idempotent retry.
+3. Offline participants receive the same economic outcome as online participants.
+4. Listing status, item owner, buyer/seller IDs, price, and currency movements recover consistently after restart.
+5. Mail is a notification of committed state, not the sole record of a refund/payout.
+6. Grace-period deletion cannot destroy an item belonging to an unresolved listing or buyer.
+7. Startup reconciliation quarantines ambiguous records instead of silently destroying potentially valuable items.
+
+## 10. Additional regression gates
+
+- Inject a non-deadlock Berkeley DB write failure early in a child batch followed by a successful write; prove the entire child batch aborts.
+- Inject a master `commitSync` failure; prove the save pass is not acknowledged and dirty data remains retryable or the server stops safely.
+- Test graceful shutdown and forced kill during dirty-object collection, child commit, master commit, checkpoint, and post-commit cleanup.
+- Test online/offline bidder cancellation and expiry, duplicate refund requests, cancellation racing expiry, and restart after refund scheduling but before credit persistence.
+- Test startup reconciliation with duplicate listings, missing vendors, missing items, expired records, and mismatched item/listing owner state.
+- No Core3 or Engine3 source patch has been made. Reproduce failures in a clean supported build before patching upstream.

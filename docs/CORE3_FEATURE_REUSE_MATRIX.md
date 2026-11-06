@@ -47,3 +47,8 @@ See [CORE3_REUSE_INVENTORY.md](CORE3_REUSE_INVENTORY.md) for exact source paths 
 ## Economy integrity audit status
 
 The deeper trace is in [CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md](CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md). Core3 has useful containment, permission, trade-validation, auction, and persistence primitives, but source review exposes unverified partial-commit windows. TransactionLog is audit logging, not an atomic transaction manager. Keep inventory/trade/auction as reuse candidates, not verified-safe, until concurrency, failure-injection, and restart tests pass.
+
+
+## Persistence and auction lifecycle verification
+
+The deeper Berkeley DB/Engine3 write pipeline and auction expiry/cancellation lifecycle are recorded in [CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md](CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md). Berkeley DB child/master transactions exist, but source review identifies child-batch error masking and ignored master-commit return values. Dirty flags are cleared before the master commit result is acted upon. Offline bidder refund and cancel-versus-expiry races also need idempotency/recovery tests. These are unverified source risks, not reproduced incidents.
