@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.check_core3_checkout import EXPECTED_CORE3_COMMIT, inspect_checkout
+from tools.check_core3_checkout import EXPECTED_CORE3_COMMIT, _is_accepted_origin, inspect_checkout
 
 
 class Core3CheckoutTests(unittest.TestCase):
@@ -21,24 +21,41 @@ class Core3CheckoutTests(unittest.TestCase):
             path.write_text("x", encoding="utf-8")
             self.assertTrue(any("not a directory" in e for e in inspect_checkout(path)))
 
-    def test_rejects_directory_outside_git_worktree(self) -> None:
+    def test_reports_non_git_directory(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             with patch("tools.check_core3_checkout.subprocess.run") as run:
                 run.side_effect = subprocess.CalledProcessError(
                     128, ["git"], stderr="fatal: not a git repository"
                 )
                 self.assertTrue(
-                    any(
-                        "Could not inspect Git checkout" in e
-                        for e in inspect_checkout(Path(directory))
-                    )
+                    any("Could not inspect Git checkout" in e for e in inspect_checkout(Path(directory)))
                 )
                 self.assertEqual(run.call_count, 1)
+
+    def test_accepts_https_ssh_and_gerrit_upstream_origins(self) -> None:
+        for remote in (
+            "https://github.com/swgemu/Core3.git",
+            "git@github.com:swgemu/Core3.git",
+            "ssh://git@github.com/swgemu/Core3.git",
+            "https://review.swgemu.com/core3",
+        ):
+            with self.subTest(remote=remote):
+                self.assertTrue(_is_accepted_origin(remote))
+
+    def test_rejects_lookalike_or_fork_origins(self) -> None:
+        for remote in (
+            "https://github.com/swgemu/Core3.evil.git",
+            "https://github.com/attacker/Core3.git",
+            "https://github.com.evil/swgemu/Core3.git",
+            "https://example.com/swgemu/Core3.git",
+            "",
+        ):
+            with self.subTest(remote=remote):
+                self.assertFalse(_is_accepted_origin(remote))
 
     def test_accepts_clean_pinned_checkout_including_worktree_layout(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory)
-            # No .git directory: Git linked worktrees use a .git file.
             outputs = [
                 "true",
                 EXPECTED_CORE3_COMMIT,

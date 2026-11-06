@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.validate_protocol import validate_manifest
+from tools.validate_protocol import MAX_MANIFEST_BYTES, validate_manifest
 
 
 def valid_manifest() -> dict[str, object]:
@@ -22,9 +22,9 @@ def valid_manifest() -> dict[str, object]:
 
 
 class ProtocolManifestTests(unittest.TestCase):
-    def write_manifest(self, directory: str, content: str) -> Path:
+    def write_manifest(self, directory: str, content: str | bytes) -> Path:
         path = Path(directory) / "manifest.json"
-        path.write_text(content, encoding="utf-8")
+        path.write_bytes(content.encode("utf-8") if isinstance(content, str) else content)
         return path
 
     def test_repository_manifest_is_valid(self) -> None:
@@ -53,14 +53,28 @@ class ProtocolManifestTests(unittest.TestCase):
 
     def test_rejects_duplicate_json_keys(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            content = '{"product":"GalaxyMMO","product":"Other"}'
-            path = self.write_manifest(directory, content)
+            path = self.write_manifest(directory, '{"product":"GalaxyMMO","product":"Other"}')
             self.assertTrue(any("duplicate object key" in e for e in validate_manifest(path)))
 
     def test_rejects_non_object_root(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = self.write_manifest(directory, "[]")
             self.assertTrue(any("root must be a JSON object" in e for e in validate_manifest(path)))
+
+    def test_rejects_nonstandard_nan_constant(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_manifest(directory, '{"unexpected": NaN}')
+            self.assertTrue(any("non-standard JSON constant" in e for e in validate_manifest(path)))
+
+    def test_rejects_invalid_utf8(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_manifest(directory, b'{"name":"\xff"}')
+            self.assertTrue(any("not valid UTF-8" in e for e in validate_manifest(path)))
+
+    def test_rejects_oversized_manifest_before_parsing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_manifest(directory, b" " * (MAX_MANIFEST_BYTES + 1))
+            self.assertTrue(any("safety limit" in e for e in validate_manifest(path)))
 
 
 if __name__ == "__main__":

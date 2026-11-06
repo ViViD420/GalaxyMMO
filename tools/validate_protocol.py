@@ -11,6 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "Integration" / "Protocol" / "protocol-manifest.json"
+MAX_MANIFEST_BYTES = 64 * 1024
 REQUIRED_KEYS = {
     "product",
     "protocol_name",
@@ -35,25 +36,41 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _reject_nonstandard_constant(value: str) -> None:
+    """Python's JSON decoder otherwise accepts NaN and Infinity extensions."""
+    raise ValueError(f"non-standard JSON constant: {value}")
+
+
 def validate_manifest(path: Path = MANIFEST) -> list[str]:
-    errors: list[str] = []
     try:
-        data = json.loads(
-            path.read_text(encoding="utf-8"),
-            object_pairs_hook=_reject_duplicate_keys,
-        )
+        raw = path.read_bytes()
     except FileNotFoundError:
         return [f"Manifest not found: {path}"]
+    except OSError as exc:
+        return [f"Could not read manifest: {exc}"]
+
+    if len(raw) > MAX_MANIFEST_BYTES:
+        return [
+            f"Manifest exceeds the {MAX_MANIFEST_BYTES}-byte safety limit: {len(raw)} bytes."
+        ]
+
+    try:
+        data = json.loads(
+            raw.decode("utf-8"),
+            object_pairs_hook=_reject_duplicate_keys,
+            parse_constant=_reject_nonstandard_constant,
+        )
+    except UnicodeDecodeError as exc:
+        return [f"Manifest is not valid UTF-8 at byte {exc.start}."]
     except json.JSONDecodeError as exc:
         return [f"Invalid JSON at line {exc.lineno}, column {exc.colno}: {exc.msg}"]
     except ValueError as exc:
-        return [f"Invalid JSON object: {exc}"]
-    except OSError as exc:
-        return [f"Could not read manifest: {exc}"]
+        return [f"Invalid JSON value: {exc}"]
 
     if not isinstance(data, dict):
         return ["Manifest root must be a JSON object."]
 
+    errors: list[str] = []
     missing = sorted(REQUIRED_KEYS - data.keys())
     if missing:
         errors.append("Missing required keys: " + ", ".join(missing))
