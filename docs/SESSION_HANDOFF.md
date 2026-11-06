@@ -98,3 +98,8 @@ First read this file and inspect the live GitHub branch, PR, and CI state. Use t
 - Push workflow run `42235370368`: success.
 - PR workflow run `42235383427`: in progress at the time of this checkpoint; recheck exact-SHA CI before reporting completion.
 - PR #1 remains open and Draft. Do not merge without explicit approval.
+
+
+## CI follow-through
+
+The exact branch head recorded above passed both repository validation workflows. This CI covers the GalaxyMMO repository's existing validation workflow; it does not compile Core3, Engine3, or Unreal Engine and does not run the proposed economy fault-injection scenarios.
