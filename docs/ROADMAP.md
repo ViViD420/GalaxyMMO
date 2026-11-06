@@ -7,14 +7,17 @@ The roadmap is milestone-based. A milestone is complete only when its acceptance
 - [x] Establish project README and repository conventions.
 - [x] Document system boundaries and server-authoritative rules.
 - [x] Add a versioned protocol manifest and automated validation.
-- [x] Add initial CI validation and unit tests.
-- [ ] Merge foundation branch after review and green CI.
+- [x] Add CI validation and unit tests.
+- [x] Open a draft pull request for the foundation changes.
 
 ## M1 — Core3 technical reconnaissance
 
-- [ ] Pin an upstream Core3 commit and verify its license.
+- [x] Inspect login and zone session/packet-dispatch entry points at a pinned source snapshot.
+- [x] Record the initial opcode/callback dispatch structure and object-controller framing.
+- [ ] Verify the exact license file and notices at the pinned upstream revision.
 - [ ] Build upstream in a clean supported Linux environment.
-- [ ] Trace authentication, session lifecycle, message dispatch, object lifecycle, and replication.
+- [ ] Trace authentication, encryption, sequencing, and session handoff end-to-end.
+- [ ] Trace character selection, scene-ready, movement, and object replication end-to-end.
 - [ ] Document runtime data prerequisites and legal constraints.
 - [ ] Decide whether to use a gateway, adapter, selective reuse, or a separate server.
 
