@@ -1,0 +1,13 @@
+{
+  "product": "GalaxyMMO",
+  "protocol_name": "galaxymmo-client-server",
+  "protocol_version": "0.1.0",
+  "status": "design",
+  "transport": "undecided",
+  "serialization": "undecided",
+  "server_authoritative": true,
+  "compatibility": {
+    "core3_wire_compatible": false,
+    "notes": "No wire compatibility is claimed. Evaluate Core3 networking before selecting an adapter or protocol."
+  }
+}

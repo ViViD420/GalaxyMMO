@@ -1,0 +1,32 @@
+# Build outputs
+[Bb]uild/
+[Bb]inaries/
+[Ii]ntermediate/
+[Ss]aved/
+[Dd]erivedDataCache/
+
+# IDE and local settings
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Local secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+*config-local.lua
+
+# Unreal generated content
+*.sln
+*.xcodeproj
+*.xcworkspace
