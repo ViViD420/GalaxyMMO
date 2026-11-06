@@ -8,8 +8,9 @@ Use this file as the canonical restart point when continuing work in a new ChatG
 - Active branch: `development/foundation-hardening`
 - Base branch: `main`
 - Pull request: https://github.com/ViViD420/GalaxyMMO/pull/1
-- PR state at this checkpoint: open, Draft, not merged. Do not merge without the owner's explicit approval.
-- This handoff must be refreshed to the exact live commit after the current work is committed.
+- PR state: open, Draft, not merged. Do not merge without explicit owner approval.
+- Current branch/PR head: `c577d77e399771eb77be034bdeeea25315f42db5`
+- Commit: `docs: map reusable Core3 server systems`
 - Upstream Core3 source pin audited: `403893d9b9f8e6fa712fbb3cb1fcd8f0fe45bb79`
 - Core3 build status: not yet built by GalaxyMMO.
 - Existing CI validates Python tooling, protocol metadata, and unit tests; it does not build Core3 or Unreal.
@@ -20,7 +21,7 @@ GalaxyMMO is an original open-world sandbox MMORPG using Unreal Engine 5 + C++ f
 
 - Do not assume the UE5 client can speak the Core3 protocol directly.
 - Do not duplicate Core3 account, character, inventory, persistence, or world-simulation systems without proving a need.
-- Evaluate an adapter/gateway only after the relevant Core3 lifecycle and transport behavior is traced; in-process versus separate-process remains undecided.
+- Evaluate a gateway/adapter only after relevant lifecycle and transport behavior is traced; in-process versus separate-process remains undecided.
 - Keep simulation and persistence server-authoritative.
 - Do not merge the PR, rewrite Core3 subsystems, claim a build passed without evidence, or include proprietary client binaries, extracted assets, archives, art, audio, or data.
 - Verify the exact upstream license at the pinned revision before copying, modifying, or distributing Core3 code. Preserve upstream notices.
@@ -29,9 +30,9 @@ GalaxyMMO is an original open-world sandbox MMORPG using Unreal Engine 5 + C++ f
 
 - Foundation architecture, ADRs, protocol manifest, validator, tests, CI, Core3 build baseline, and checkout verifier.
 - Core3 source reconnaissance for login/zone/session/character/scene-ready/movement.
-- **Core3 reuse milestone:** `docs/CORE3_REUSE_INVENTORY.md` and expanded `docs/CORE3_FEATURE_REUSE_MATRIX.md` now map Core3's existing server systems to GalaxyMMO reuse decisions, source paths, representative APIs, and remaining verification gates.
-- Important finding: Core3 inventory behavior is distributed across SceneObject containment/slot APIs, PlayerManager inventory/trade APIs, and ObjectManager persistence; there is no single standalone inventory manager established by this source review.
-- Latest completed project commit before this checkpoint update: to be filled with the current commit after push.
+- **Core3 reuse milestone:** `docs/CORE3_REUSE_INVENTORY.md` maps existing server systems to GalaxyMMO reuse decisions, representative APIs, source paths, and remaining verification gates. `docs/CORE3_FEATURE_REUSE_MATRIX.md` is the concise summary.
+- Key finding: inventory behavior is distributed across SceneObject containment/slot APIs, PlayerManager inventory/trade APIs, and ObjectManager persistence; this review does not establish a single standalone InventoryManager.
+- Exact current commit: `c577d77e399771eb77be034bdeeea25315f42db5`.
 - The reuse inventory is source-level evidence only. No Core3 or Unreal build/runtime verification has been completed.
 
 ## Core3 reuse findings
@@ -86,4 +87,4 @@ When the user says:
 
 > **Resume GalaxyMMO from the handoff checkpoint.**
 
-First read this file and inspect the live GitHub branch, PR, and CI state. Use the live repository as source of truth if it has advanced beyond the SHA recorded above. Continue from the next unfinished step, commit completed work to `development/foundation-hardening`, and report the exact commit SHA and actual CI status. Never overwrite concurrent changes or merge without explicit approval.
+First read this file and inspect the live GitHub branch, PR, and CI state. Use the live repository as source of truth if it has advanced beyond the SHA recorded above. Continue from the next unfinished step, commit completed work to `development/foundation-hardening`, and report the exact commit SHA and actual CI status. Never overwrite concurrent work or merge without explicit approval.
