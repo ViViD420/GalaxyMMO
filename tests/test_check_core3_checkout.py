@@ -15,15 +15,32 @@ class Core3CheckoutTests(unittest.TestCase):
             missing = Path(directory) / "missing"
             self.assertTrue(any("does not exist" in e for e in inspect_checkout(missing)))
 
-    def test_rejects_directory_without_git_metadata(self) -> None:
+    def test_rejects_file_as_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            self.assertTrue(any("Not a Git working copy" in e for e in inspect_checkout(Path(directory))))
+            path = Path(directory) / "not-a-directory"
+            path.write_text("x", encoding="utf-8")
+            self.assertTrue(any("not a directory" in e for e in inspect_checkout(path)))
 
-    def test_accepts_clean_pinned_checkout(self) -> None:
+    def test_rejects_directory_outside_git_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("tools.check_core3_checkout.subprocess.run") as run:
+                run.side_effect = subprocess.CalledProcessError(
+                    128, ["git"], stderr="fatal: not a git repository"
+                )
+                self.assertTrue(
+                    any(
+                        "Could not inspect Git checkout" in e
+                        for e in inspect_checkout(Path(directory))
+                    )
+                )
+                self.assertEqual(run.call_count, 1)
+
+    def test_accepts_clean_pinned_checkout_including_worktree_layout(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory)
-            (checkout / ".git").mkdir()
+            # No .git directory: Git linked worktrees use a .git file.
             outputs = [
+                "true",
                 EXPECTED_CORE3_COMMIT,
                 "https://github.com/swgemu/Core3.git",
                 "",
@@ -34,13 +51,17 @@ class Core3CheckoutTests(unittest.TestCase):
                     for value in outputs
                 ]
                 self.assertEqual(inspect_checkout(checkout), [])
-                self.assertEqual(run.call_count, 3)
+                self.assertEqual(run.call_count, 4)
 
     def test_rejects_wrong_commit_remote_and_dirty_tree(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory)
-            (checkout / ".git").mkdir()
-            outputs = ["deadbeef", "https://example.com/fork/Core3.git", " M changed.cpp"]
+            outputs = [
+                "true",
+                "deadbeef",
+                "https://example.com/fork/Core3.git",
+                " M changed.cpp",
+            ]
             with patch("tools.check_core3_checkout.subprocess.run") as run:
                 run.side_effect = [
                     subprocess.CompletedProcess([], 0, value + "\n", "")

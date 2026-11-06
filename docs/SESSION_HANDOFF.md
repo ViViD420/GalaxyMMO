@@ -9,10 +9,10 @@ Use this file as the canonical restart point when continuing work in a new ChatG
 - Base branch: `main`
 - Pull request: https://github.com/ViViD420/GalaxyMMO/pull/1
 - PR state at last check: open, Draft; do not merge without the owner's approval.
-- Last committed HEAD at this handoff: `3e6d3016bde7ff12458a8188d25029e1894aa569`
+- Last committed HEAD at this checkpoint: `924025a94855821e13df58e089f372fd949b3603`
 - Upstream Core3 source pin audited: `403893d9b9f8e6fa712fbb3cb1fcd8f0fe45bb79`
 - Core3 build status: not yet built by GalaxyMMO.
-- Latest CI for the last two earlier commits passed; CI for the handoff commit must be checked by exact SHA before claiming success.
+- CI for checkpoint `924025a94855821e13df58e089f372fd949b3603`: completed successfully (workflow run 42228241503).
 
 ## Project direction
 
@@ -31,16 +31,17 @@ Do not merge the PR, rewrite Core3 subsystems, claim a build passed without evid
   - `tools/check_core3_checkout.py`
   - `tests/test_check_core3_checkout.py`
   - `docs/CORE3_BUILD_BASELINE.md`
-- Updated README and development environment guide.
+- Protocol validator rejects duplicate JSON keys and safely handles malformed field types.
+- Core3 checkout verifier supports linked Git worktrees, rejects non-directory paths, and bounds Git command execution with a timeout.
+- Regression tests cover those edge cases.
 
 ## Current next steps
 
-1. Check PR head and CI results for the exact latest commit SHA.
-2. Review and harden the new Core3 checkout verifier/tests if CI exposes issues.
-3. Complete a clean checkout of the pinned upstream Core3 revision in a suitable Linux environment.
-4. Record toolchain versions and attempt the upstream debug build; do not modify Core3 until a real blocker is reproduced.
-5. Continue source audit of transport security, reliability/sequencing, object replication, persistence transactions, and reconnect lifecycle.
-6. Only then select and implement the smallest viable client adapter vertical slice.
+1. Re-check live branch head, PR, and exact-SHA CI before changing files.
+2. Obtain a clean Linux environment or remote workstation and check out the pinned Core3 source separately.
+3. Record toolchain versions and attempt the upstream debug build; do not modify Core3 until a real blocker is reproduced.
+4. Continue source audit of transport security, reliability/sequencing, object replication, persistence transactions, and reconnect lifecycle.
+5. Select and implement the smallest viable client adapter vertical slice only after the audit and build baseline.
 
 ## Quick validation commands
 

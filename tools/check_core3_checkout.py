@@ -21,25 +21,33 @@ def _git(checkout: Path, *args: str) -> str:
         check=True,
         capture_output=True,
         text=True,
+        timeout=15,
     )
     return result.stdout.strip()
 
 
 def inspect_checkout(checkout: Path) -> list[str]:
-    """Return validation errors; an empty list means the checkout matches the pin."""
-    errors: list[str] = []
+    """Return validation errors; an empty list means the checkout matches the pin.
+
+    Git itself determines whether the path is a working tree. This supports
+    linked worktrees, where .git is a file rather than a directory.
+    """
     if not checkout.exists():
         return [f"Core3 checkout does not exist: {checkout}"]
-    if not (checkout / ".git").exists():
-        return [f"Not a Git working copy: {checkout}"]
+    if not checkout.is_dir():
+        return [f"Core3 checkout path is not a directory: {checkout}"]
 
     try:
+        inside_work_tree = _git(checkout, "rev-parse", "--is-inside-work-tree")
+        if inside_work_tree != "true":
+            return [f"Not a Git working copy: {checkout}"]
         commit = _git(checkout, "rev-parse", "HEAD")
         remote = _git(checkout, "remote", "get-url", "origin").lower()
         dirty = _git(checkout, "status", "--porcelain")
-    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as exc:
         return [f"Could not inspect Git checkout: {exc}"]
 
+    errors: list[str] = []
     if commit != EXPECTED_CORE3_COMMIT:
         errors.append(
             f"Unexpected Core3 commit: {commit or '(empty)'}; "
