@@ -9,8 +9,8 @@ Use this file as the canonical restart point when continuing work in a new ChatG
 - Base branch: main
 - Pull request: https://github.com/ViViD420/GalaxyMMO/pull/1
 - PR state at checkpoint: open, Draft, not merged. Do not merge without explicit owner approval.
-- Checkpoint parent: a4329afcd29b1f4c5fb9c62d1205fe27429bc321
-- Refresh this handoff to the exact new commit SHA immediately after this checkpoint is committed.
+- Completed economy-audit content commit: 0e2d1c387198bff33836fcc3332b4f010655c566 (docs: audit Core3 economy transaction paths).
+- This follow-up commit refreshes the handoff after the audit commit; always fetch live branch/PR head before continuing.
 - Upstream Core3 source pin: 403893d9b9f8e6fa712fbb3cb1fcd8f0fe45bb79
 - Core3 build status: not yet built by GalaxyMMO.
 - Existing CI validates repository Python tooling and metadata; it does not build Core3 or Unreal.
@@ -30,7 +30,7 @@ GalaxyMMO is an original open-world sandbox MMORPG using Unreal Engine 5 + C++ f
 ## Work completed
 
 - Repository foundation, architecture/ADRs, protocol manifest/validator/tests/CI, Core3 reconnaissance, and reuse inventory.
-- Inventory/trade/persistence source-audit milestone: added docs/CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md; updated the reuse inventory, feature matrix, and this handoff.
+- Inventory/trade/persistence source-audit milestone: added docs/CORE3_INVENTORY_TRADE_PERSISTENCE_AUDIT.md; updated the reuse inventory, feature matrix, and this handoff. Audit content is committed at 0e2d1c387198bff33836fcc3332b4f010655c566.
 - Audit traced ContainerComponent transfer ordering; PlayerManager trade offer, validation, and finalization; AuctionManager listing, purchase, bid/refund, and retrieval; AuctionItem deletion; ObjectManager persistence hooks; MySQL wrapper semantics; and TransactionLog.
 - Critical finding: TransactionLog is audit logging, not a DB transaction or rollback system.
 - Critical source-level trade risk: finalization does not roll back prior successful item transfers when a later transfer fails, and the shown method still proceeds to currency settlement.
