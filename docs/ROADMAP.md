@@ -13,11 +13,13 @@ The roadmap is milestone-based. A milestone is complete only when its acceptance
 ## M1 — Core3 technical reconnaissance
 
 - [x] Inspect login and zone session/packet-dispatch entry points at a pinned source snapshot.
-- [x] Record the initial opcode/callback dispatch structure and object-controller framing.
-- [ ] Verify the exact license file and notices at the pinned upstream revision.
+- [x] Record initial opcode/callback dispatch and object-controller framing.
+- [x] Trace source-level character selection checks and scene-ready acknowledgement.
+- [x] Record movement-transform field layout and coordinate ordering.
+- [ ] Verify exact license file and notices at the pinned upstream revision.
 - [ ] Build upstream in a clean supported Linux environment.
-- [ ] Trace authentication, encryption, sequencing, and session handoff end-to-end.
-- [ ] Trace character selection, scene-ready, movement, and object replication end-to-end.
+- [ ] Trace credential protection, transport reliability, sequencing, and session handoff end-to-end.
+- [ ] Trace object creation, baseline/delta replication, containment, and movement validation end-to-end.
 - [ ] Document runtime data prerequisites and legal constraints.
 - [ ] Decide whether to use a gateway, adapter, selective reuse, or a separate server.
 
