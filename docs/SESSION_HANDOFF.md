@@ -89,3 +89,12 @@ First read this file and inspect the live GitHub branch, PR, and CI state. Use t
 - Audit sections 8-10 trace Berkeley DB worker/master commit flow, error handling, checkpoint/shutdown, auction startup reconstruction, expiry, cancellation, refunds, and regression gates.
 - Source inspection only: no clean Linux build, deterministic fault injection, crash/restart test, or runtime economy test has been executed. Do not claim complete economy functionality or patch upstream without reproducing the failure.
 - Audit extension content commit: `01021180a56e9659bbee7966604faa9cf7a44eb8` (`docs: trace Berkeley DB commits and auction recovery`).
+
+
+## Exact current repository checkpoint
+
+- Branch head after handoff refresh: `3f45920172451853953fbff3142ba099c44f1280` (`docs: checkpoint Berkeley DB audit findings`).
+- Tree: `2dc1232be479765f6835a53236a18bfb94683c50`.
+- Push workflow run `42235370368`: success.
+- PR workflow run `42235383427`: in progress at the time of this checkpoint; recheck exact-SHA CI before reporting completion.
+- PR #1 remains open and Draft. Do not merge without explicit approval.
