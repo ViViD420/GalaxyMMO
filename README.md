@@ -1,24 +1,30 @@
 # GalaxyMMO
 
-GalaxyMMO is an original open-world sandbox MMORPG project. The planned client is Unreal Engine 5 + C++; SWGEmu Core3 is being evaluated as a possible server foundation, not assumed to be a drop-in backend.
+GalaxyMMO is an original open-world sandbox MMORPG project. The planned client is Unreal Engine 5 + C++; SWGEmu Core3 is the intended existing server foundation, with a compatibility-first strategy that preserves working upstream systems and changes only what GalaxyMMO demonstrably requires.
 
-**Project phase:** foundation and technical reconnaissance.
+**Project phase:** foundation and Core3 integration reconnaissance.
 
 ## Start here
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
-- [Development environment](docs/DEVELOPMENT_ENVIRONMENT.md)
-- [Core3 reconnaissance plan](docs/CORE3_RECONNAISSANCE.md)
+- [Core3 integration plan](docs/CORE3_INTEGRATION_PLAN.md)
+- [Core3 feature reuse matrix](docs/CORE3_FEATURE_REUSE_MATRIX.md)
+- [Core3 reconnaissance](docs/CORE3_RECONNAISSANCE.md)
 - [Client/server protocol boundary](docs/PROTOCOL_BOUNDARY.md)
+- [Authentication/session contract draft](Integration/Contracts/auth-session-v0.1.md)
+- [Development environment](docs/DEVELOPMENT_ENVIRONMENT.md)
 - [Contribution guide](CONTRIBUTING.md)
 - [Legal and third-party notices](LEGAL_NOTICES.md)
 
 ## Engineering principles
 
+- Preserve Core3's working systems wherever they meet requirements.
+- Prefer configuration, data, scripts, and supported extension points over core rewrites.
+- Keep GalaxyMMO client-facing contracts independent of Core3 internals.
 - Server-authoritative gameplay and persistence.
 - Explicit, versioned client/server contracts.
-- Core3 compatibility is not claimed until verified by source audit and a repeatable proof of concept.
+- Never claim compatibility or successful builds without repeatable proof.
 - Original project-owned setting, names, art, audio, and game content.
 - Automated validation and tests from the beginning.
 
